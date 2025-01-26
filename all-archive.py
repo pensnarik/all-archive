@@ -4,7 +4,9 @@ import os
 import sys
 import argparse
 
+from aa.file import File
 from aa.provider import FileSystemProvider
+from aa.db import Database
 
 class App():
 
@@ -14,6 +16,9 @@ class App():
 
         self.args = parser.parse_args()
 
+        self.db = Database()
+        self.db.connect('postgresql://allarchive:allarchive@/allarchive')
+
     def run(self):
         provider = FileSystemProvider(
             self.args.path,
@@ -22,7 +27,7 @@ class App():
 
         for file in provider.get():
             print(file)
-
+            fileobj = File(file)
 
 if __name__ == "__main__":
     sys.exit(App().run())

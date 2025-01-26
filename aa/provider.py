@@ -14,6 +14,7 @@ class FileSystemProvider(Provider):
         self.path = path
         self.filter = filter
 
+
     def get(self):
         for root, dirs, files in os.walk(self.path):
             for file in files:
