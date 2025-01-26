@@ -7,6 +7,8 @@ import subprocess
 
 from PIL import Image
 
+from .file import File
+
 class PCPHash():
 
     # Size of image perceptive hash, in bits, required to meet 2 conditions:
@@ -18,25 +20,27 @@ class PCPHash():
     PCP_THUMB_SIZE = int(math.sqrt(PCP_HASH_SIZE))
     PCP_BITS_PER_ROW = PCP_THUMB_SIZE
 
+    def __init__(self, file: File, tmp_dir: str):
+        self.file = file
+        self.tmp_dir = os.path.join(tmp_dir, '.pcp_hash')
 
-    def get_pcp_hash(filename):
-        # TODO
-        # Consider referring to this for more optimal algorithm
-        # http://www.ruanyifeng.com/blog/2011/07/imgHash.txt?spm=a2c65.11461447.0.0.1c8c3588zsrYlA&file=imgHash.txt
-        md5_hash = get_file_hash(filename)
+        if not os.path.exists(self.tmp_dir):
+            os.makedirs(self.tmp_dir)
 
-        if os.path.exists(get_hash_filename(md5_hash)):
-            return open(get_hash_filename(md5_hash), 'rt').read()
+    def __get_thumb_filename(self):
+        return f"{self.tmp_dir}/{self.file.md5_hash}.png"
 
-        command = 'convert -depth 8 -strip -type Grayscale -geometry %sx%s! "%s" "%s/%s.png"' % \
-                  (PCP_THUMB_SIZE, PCP_THUMB_SIZE, filename, get_pcp_hash_dir(), md5_hash)
+    def get_pcp_hash(self):
+        command = f'magick convert -depth 8 -strip -type Grayscale ' \
+                  f'-geometry {self.PCP_THUMB_SIZE}x{self.PCP_THUMB_SIZE}! ' \
+                  f'"{self.file.path}" "{self.__get_thumb_filename()}"'
 
         try:
             subprocess.run(command, shell=True, check=True)
         except subprocess.CalledProcessError:
             return None
 
-        im = Image.open('%s/%s.png' % (get_pcp_hash_dir(), md5_hash))
+        im = Image.open(f'{self.__get_thumb_filename()}')
         width, height = im.size
 
         if width != height:
@@ -57,19 +61,16 @@ class PCPHash():
             bits = 0
             for x in range(0, height):
                 bit = int(im.getpixel((x, y)) > average)
-                bits += bit * math.pow(2, PCP_BITS_PER_ROW - 1 - x)
+                bits += bit * math.pow(2, self.PCP_BITS_PER_ROW - 1 - x)
 
             hash.append(int(bits))
 
         # We need (PCP_BITS_PER_ROW / 8 * 2) symbols to store a row as a hex string
         # It's (PCP_BITS_PER_ROW / 8) bytes, and 2 characters per byte ('00' - 'ff')
-        format_str = '%.{}x'.format(int(PCP_BITS_PER_ROW / 8 * 2))
+        format_str = '%.{}x'.format(int(self.PCP_BITS_PER_ROW / 8 * 2))
         hash_as_str = ''.join([format_str % i for i in hash])
 
-        with open(get_hash_filename(md5_hash), 'wt') as f:
-            f.write(hash_as_str)
-
-        os.system('rm %s/%s.png' % (get_pcp_hash_dir(), md5_hash))
+        os.remove(self.__get_thumb_filename())
 
         return hash_as_str
 
