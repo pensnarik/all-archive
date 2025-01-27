@@ -1,5 +1,6 @@
 import psycopg
 
+from psycopg.errors import UniqueViolation
 
 class Database():
 
@@ -35,3 +36,15 @@ class Database():
             row = cursor.fetchone()
 
         return row
+
+
+    def fetchvalue(self, query: str, params: tuple=None):
+        with self.conn.cursor() as cursor:
+            cursor.execute(query, params)
+
+            row = cursor.fetchone()
+
+        if row is not None:
+            return row[0]
+
+        return None
