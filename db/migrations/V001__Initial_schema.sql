@@ -12,8 +12,7 @@ create table aa.storage_container
     container_type          aa.t_storage_container_type not null,
     name                    text not null,
     label                   text,
-    fs_uuid                 uuid,
-
+    fs_uuid                 uuid
 );
 
 create sequence aa.file_id_seq start with 100000000 increment by 1;

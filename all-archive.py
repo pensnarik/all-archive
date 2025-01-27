@@ -24,7 +24,7 @@ class App():
         self.path = os.path.abspath(self.args.path)
 
         print(f"The full path is: {self.path}")
-        mps = Mountpoints()
+        mps = Mountpoints(self.db)
 
         for mountpoint in mps.mountpoints:
             print(mountpoint)
@@ -35,6 +35,8 @@ class App():
             raise Exception(f"Could not find mountpoint for path: {self.path}")
 
         print(f"Found mountpoint for a given path: {mp}")
+
+        mp.save()
 
         provider = FileSystemProvider(
             self.path
