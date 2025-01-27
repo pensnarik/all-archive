@@ -1,7 +1,7 @@
 create schema aa;
 
 create type aa.t_file_type as enum ('unknown', 'image', 'video', 'archive', 'text');
-create type aa.t_image_type as enum ('unknown', 'jpeg', 'png', 'bmp', 'gif', 'webp');
+create type aa.t_image_type as enum ('unknown', 'jpeg', 'png', 'bmp', 'gif', 'webp', 'invalid');
 create type aa.t_storage_container_type as enum ('archive', 'ext3', 'ext4', 'iso-9660', 'ntfs', 'vfat');
 
 create sequence aa.storage_container_id_seq start with 1 increment by 1;
@@ -36,8 +36,7 @@ create sequence aa.image_file_id_seq start with 200000000 increment by 1;
 
 create table aa.image_file
 (
-    id                      bigint primary key default nextval('aa.image_file_id_seq'),
-    file_id                 bigint not null references aa.file(id),
+    id                      bigint primary key,
     width                   smallint not null,
     height                  smallint not null,
     image_type              aa.t_image_type not null

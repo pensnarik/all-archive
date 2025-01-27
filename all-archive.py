@@ -8,6 +8,7 @@ from aa.file import File
 from aa.provider import FileSystemProvider
 from aa.db import Database
 from aa.mountpoints import Mountpoint, Mountpoints
+from aa.image import ImageFile
 
 class App():
 
@@ -45,7 +46,14 @@ class App():
 
         for file in provider.get():
             print(file)
-            fileobj = File(self.db, mp, file)
+            try:
+                # Assume that file is an image
+                fileobj = ImageFile(self.db, mp, file)
+            except TypeError:
+                # That is not an image
+                print("This is not an image")
+                fileobj = File(self.db, mp, file)
+
             fileobj.save()
 
 if __name__ == "__main__":

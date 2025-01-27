@@ -35,7 +35,7 @@ class Mountpoint():
         result = {}
 
         output = subprocess.check_output(['blkid', self.device]).decode('utf-8')
-        print(f"!{output}!")
+
         for item in re.findall(r'([^=\s]+)="([^"]+)"', output):
             result[item[0]] = item[1]
 
@@ -60,7 +60,7 @@ class Mountpoint():
         self.id = self.get_id(self.uuid)
 
         if self.id is None:
-            self.id = self.db.fetchone(query, (self.type, self.uuid, self.label, self.uuid))
+            self.id = self.db.fetchvalue(query, (self.type, self.uuid, self.label, self.uuid))
 
         self.db.conn.commit()
 

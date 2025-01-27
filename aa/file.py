@@ -30,11 +30,24 @@ class File():
         return file_hash.hexdigest()
 
 
+    def get_id(self):
+        query = "select id from aa.file " \
+                "where container_id = %s " \
+                "  and path = %s"
+
+        return self.db.fetchvalue(query, [self.mp.id, self.path])
+
+
     def save(self):
         query = "insert into aa.file(container_id, path, md5_hash, size, ctime) " \
                 "values (%s, %s, %s, %s, %s) " \
                 "returning id"
 
-        id = self.db.fetchone(query, (self.mp.id, self.path, self.md5, self.size, self.ctime))
+        self.id = self.get_id()
+
+        if self.id is None:
+            self.id = self.db.fetchvalue(query, (self.mp.id, self.path, self.md5, self.size, self.ctime))
+
+        print(f"file.id == {self.id}")
 
         self.db.conn.commit()
