@@ -29,7 +29,7 @@ class Database():
 
 
     def fetchone(self, query: str, params: tuple=None):
-        with self.conn.cusros() as cursor:
+        with self.conn.cursor() as cursor:
             cursor.execute(query, params)
 
             row = cursor.fetchone()

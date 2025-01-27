@@ -7,6 +7,7 @@ import argparse
 from aa.file import File
 from aa.provider import FileSystemProvider
 from aa.db import Database
+from aa.mountpoints import Mountpoint, Mountpoints
 
 class App():
 
@@ -20,14 +21,29 @@ class App():
         self.db.connect('postgresql://allarchive:allarchive@/allarchive')
 
     def run(self):
+        self.path = os.path.abspath(self.args.path)
+
+        print(f"The full path is: {self.path}")
+        mps = Mountpoints()
+
+        for mountpoint in mps.mountpoints:
+            print(mountpoint)
+
+        mp = mps.find_by_path(self.path)
+
+        if mp is None:
+            raise Exception(f"Could not find mountpoint for path: {self.path}")
+
+        print(f"Found mountpoint for a given path: {mp}")
+
         provider = FileSystemProvider(
-            self.args.path,
-            filter=lambda x: x.endswith('.jpg')
+            self.path
         )
 
         for file in provider.get():
             print(file)
-            fileobj = File(file)
+            fileobj = File(self.db, file)
+            fileobj.save()
 
 if __name__ == "__main__":
     sys.exit(App().run())
