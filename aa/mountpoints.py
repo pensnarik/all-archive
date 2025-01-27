@@ -2,7 +2,7 @@ import os
 import re
 import subprocess
 
-from aa.db import Database
+from aa.db import Database, UniqueViolation
 
 SUPPORTED_FS = ['ext3', 'ext4']
 
@@ -46,12 +46,21 @@ class Mountpoint():
         return f"{self.mountpoint} [{self.type}]"
 
 
+    def get_id(self, uuid: str):
+        query = "select id from aa.storage_container where fs_uuid = %s"
+
+        return self.db.fetchvalue(query, [uuid])
+
+
     def save(self):
         query = "insert into aa.storage_container (container_type, name, label, fs_uuid) " \
                 "values (%s, %s, %s, %s) " \
                 "returning id"
 
-        id = self.db.fetchone(query, (self.type, self.uuid, self.label, self.uuid))
+        self.id = self.get_id(self.uuid)
+
+        if self.id is None:
+            self.id = self.db.fetchone(query, (self.type, self.uuid, self.label, self.uuid))
 
         self.db.conn.commit()
 

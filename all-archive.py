@@ -37,6 +37,7 @@ class App():
         print(f"Found mountpoint for a given path: {mp}")
 
         mp.save()
+        print(f"Counainer id == {mp.id}")
 
         provider = FileSystemProvider(
             self.path
@@ -44,7 +45,7 @@ class App():
 
         for file in provider.get():
             print(file)
-            fileobj = File(self.db, file)
+            fileobj = File(self.db, mp, file)
             fileobj.save()
 
 if __name__ == "__main__":

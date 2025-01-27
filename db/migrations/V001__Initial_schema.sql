@@ -15,6 +15,8 @@ create table aa.storage_container
     fs_uuid                 uuid
 );
 
+create unique index storage_container_fs_uuid_idx on aa.storage_container(fs_uuid);
+
 create sequence aa.file_id_seq start with 100000000 increment by 1;
 
 create table aa.file

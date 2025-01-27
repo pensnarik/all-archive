@@ -4,11 +4,13 @@ import hashlib
 from datetime import datetime, timezone
 
 from aa.db import Database
+from aa.mountpoints import Mountpoint
 
 class File():
 
-    def __init__(self, db: Database, path: str):
+    def __init__(self, db: Database, mp: Mountpoint, path: str):
         self.db = db
+        self.mp = mp
         self.path = path
         self.md5 = self.__get_md5()
         si = os.stat(self.path)
@@ -29,10 +31,10 @@ class File():
 
 
     def save(self):
-        query = "insert into aa.file(path, md5_hash, size, ctime) " \
-                "values (%s, %s, %s, %s) " \
+        query = "insert into aa.file(container_id, path, md5_hash, size, ctime) " \
+                "values (%s, %s, %s, %s, %s) " \
                 "returning id"
 
-        id = self.db.fetchone(query, (self.path, self.md5, self.size, self.ctime))
+        id = self.db.fetchone(query, (self.mp.id, self.path, self.md5, self.size, self.ctime))
 
         self.db.conn.commit()
