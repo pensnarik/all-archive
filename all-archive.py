@@ -49,9 +49,9 @@ class App():
             try:
                 # Assume that file is an image
                 fileobj = ImageFile(self.db, mp, file)
+                print(f"Format = {fileobj.im.format}")
             except TypeError:
                 # That is not an image
-                print("This is not an image")
                 fileobj = File(self.db, mp, file)
 
             fileobj.save()
