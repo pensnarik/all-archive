@@ -21,20 +21,21 @@ class ImageFileType(Enum):
     gif = 4
     webp = 5
 
-class ImageFile(File):
+class ImageFile():
 
-    def __init__(self, db: Database, mp: Mountpoint, path: str):
+    def __init__(self, db: Database, file=File, mp: Mountpoint, path: str):
         super().__init__(db, mp, path)
 
+        self.file = file
         self.exif = None
         self.time = None
         self.width = None
         self.height = None
-        self.type = ImageFileType.unknown
+        self.image_type = ImageFileType.unknown
 
         try:
             self.im = Image.open(self.path)
-        except UnidentifiedImageError:
+        except (UnidentifiedImageError, ValueError, OSError):
             raise TypeError(f"This is not an image")
 
         self.image_type = self.__get_type()
@@ -50,12 +51,12 @@ class ImageFile(File):
         self.height = self.im.size[1]
 
     def __read_exif(self):
-        if self.im._getexif() is None:
+        if self.im.getexif() is None:
             return None
 
         return {
             ExifTags.TAGS[k]: v
-            for k, v in self.im._getexif().items()
+            for k, v in self.im.getexif().items()
             if k in ExifTags.TAGS
         }
 
@@ -80,10 +81,11 @@ class ImageFile(File):
         return ImageFileType.unknown
 
     def save(self):
-        super().save()
+        self.file.save()
 
         query = "insert into aa.image_file(id, width, height, image_type) " \
                 "values (%s, %s, %s, %s) " \
                 "returning id"
 
-        self.db.fetchone(query, [self.id, self.width, self.height, self.type])
+        if self.db.fetchvalue("select 1 from aa.image_file where id = %s", [self.id]) is None:
+            self.db.fetchone(query, [self.id, self.width, self.height, self.image_type])
