@@ -23,7 +23,7 @@ class ImageFileType(Enum):
 
 class ImageFile():
 
-    def __init__(self, db: Database, file=File, mp: Mountpoint, path: str):
+    def __init__(self, db: Database, file: File, mp: Mountpoint, path: str):
         super().__init__(db, mp, path)
 
         self.file = file

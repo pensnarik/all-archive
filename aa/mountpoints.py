@@ -3,6 +3,7 @@ import re
 import subprocess
 
 from aa.db import Database, UniqueViolation
+from os.path import dirname, realpath
 
 SUPPORTED_FS = ['ext3', 'ext4']
 
@@ -34,7 +35,8 @@ class Mountpoint():
         # BLOCK_SIZE="4096" TYPE="ext4" PARTUUID="4fab0181-5e73-42de-be7c-98f9b72eccbf"
         result = {}
 
-        output = subprocess.check_output(['blkid', self.device]).decode('utf-8')
+        blkid_path = os.path.join(dirname(realpath(__file__)), '..', 'blkid')
+        output = subprocess.check_output([blkid_path, self.device]).decode('utf-8')
 
         for item in re.findall(r'([^=\s]+)="([^"]+)"', output):
             result[item[0]] = item[1]
@@ -43,7 +45,7 @@ class Mountpoint():
 
 
     def __repr__(self):
-        return f"{self.mountpoint} [{self.type}]"
+        return f"{self.mountpoint} [{self.type}] [{self.uuid}]"
 
 
     def get_id(self, uuid: str):

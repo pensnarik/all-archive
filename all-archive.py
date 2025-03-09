@@ -21,6 +21,7 @@ class App():
         self.db = Database()
         self.db.connect('postgresql://allarchive:allarchive@/allarchive')
 
+
     def run(self):
         self.path = os.path.abspath(self.args.path)
 
