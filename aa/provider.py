@@ -4,6 +4,8 @@ from stat import S_ISSOCK, S_ISLNK, S_ISCHR
 
 from typing import Callable
 
+from aa.mountpoints import Mountpoint
+
 class Provider():
 
     def __init__(self):
@@ -12,8 +14,9 @@ class Provider():
 
 class FileSystemProvider(Provider):
 
-    def __init__(self, path: str, filter: Callable=lambda x: True):
+    def __init__(self, path: str, mp: Mountpoint, filter: Callable=lambda x: True):
         self.path = path
+        self.mp = mp
         self.filter = filter
 
 

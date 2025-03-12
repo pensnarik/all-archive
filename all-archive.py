@@ -42,7 +42,7 @@ class App():
         print(f"Counainer id == {mp.id}")
 
         provider = FileSystemProvider(
-            self.path
+            self.path, mp
         )
 
         for file in provider.get():
@@ -54,6 +54,8 @@ class App():
             except TypeError:
                 # That is not an image
                 fileobj = File(self.db, mp, file)
+            except PermissionError:
+                print(f"Skipping {file} due to permission error")
 
             fileobj.save()
 

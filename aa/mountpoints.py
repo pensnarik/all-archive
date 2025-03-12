@@ -5,7 +5,7 @@ import subprocess
 from aa.db import Database, UniqueViolation
 from os.path import dirname, realpath
 
-SUPPORTED_FS = ['ext3', 'ext4']
+SUPPORTED_FS = ['ext3', 'ext4', 'iso9660']
 
 
 class Mountpoint():
@@ -74,6 +74,7 @@ class Mountpoints():
         self.mountpoints = []
         self.list()
 
+
     def list(self):
         with open('/proc/mounts', 'rt') as f:
             for line in f.read().split('\n'):
@@ -85,9 +86,10 @@ class Mountpoints():
                 if mp.type in SUPPORTED_FS:
                     self.mountpoints.append(mp)
 
+
     def find_by_path(self, path: str):
         # Returns a mountpoint for a given path
-        for mp in self.mountpoints:
+        for mp in sorted(self.mountpoints, key=lambda x: len(x.mountpoint), reverse=True):
             if path.startswith(mp.mountpoint):
                 return mp
 

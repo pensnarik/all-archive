@@ -18,6 +18,16 @@ class File():
         self.ctime = datetime.fromtimestamp(si.st_ctime, tz=timezone.utc)
 
 
+    def __strip_mountpoint(self, path: str) -> str:
+        if self.mp.mountpoint == '/':
+            return path
+
+        if not path.startswith(self.mp.mountpoint):
+            raise Exception(f"Path must start with mountpoint")
+
+        return path[len(self.mp.mountpoint):]
+
+
     def __get_md5(self):
         with open(self.path, 'rb') as f:
             file_hash = hashlib.md5()
@@ -46,7 +56,9 @@ class File():
         self.id = self.get_id()
 
         if self.id is None:
-            self.id = self.db.fetchvalue(query, (self.mp.id, self.path, self.md5, self.size, self.ctime))
+            self.id = self.db.fetchvalue(
+                query, (self.mp.id, self.__strip_mountpoint(self.path), self.md5, self.size, self.ctime)
+            )
 
         print(f"file.id == {self.id}")
 

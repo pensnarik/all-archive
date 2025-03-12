@@ -2,7 +2,7 @@ create schema aa;
 
 create type aa.t_file_type as enum ('unknown', 'image', 'video', 'archive', 'text');
 create type aa.t_image_type as enum ('unknown', 'jpeg', 'png', 'bmp', 'gif', 'webp', 'invalid');
-create type aa.t_storage_container_type as enum ('archive', 'ext3', 'ext4', 'iso-9660', 'ntfs', 'vfat');
+create type aa.t_storage_container_type as enum ('archive', 'ext3', 'ext4', 'iso9660', 'ntfs', 'vfat');
 
 create sequence aa.storage_container_id_seq start with 1 increment by 1;
 
@@ -12,7 +12,7 @@ create table aa.storage_container
     container_type          aa.t_storage_container_type not null,
     name                    text not null,
     label                   text,
-    fs_uuid                 uuid
+    fs_uuid                 text
 );
 
 create unique index storage_container_fs_uuid_idx on aa.storage_container(fs_uuid);
