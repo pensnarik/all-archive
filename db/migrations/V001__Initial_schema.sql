@@ -27,7 +27,8 @@ create table aa.file
     md5_hash                char(32) not null,
     size                    bigint not null,
     ctime                   timestamp without time zone,
-    processed_at            timestamptz not null default now()
+    processed_at            timestamptz not null default now(),
+    flags                   integer
 );
 
 create unique index file_path_idx on aa.file (container_id, path);
@@ -38,8 +39,8 @@ create sequence aa.image_file_id_seq start with 200000000 increment by 1;
 create table aa.image_file
 (
     id                      bigint primary key,
-    width                   smallint not null,
-    height                  smallint not null,
+    width                   integer not null,
+    height                  integer not null,
     image_type              aa.t_image_type not null
 );
 

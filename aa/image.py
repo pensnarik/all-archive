@@ -80,6 +80,29 @@ class ImageFile():
 
         return ImageFileType.unknown
 
+    def __get_exif_key(self, key: str) -> int:
+        query_get = "select id from aa.exif_key where name = %s"
+        query_ins = "insert into aa.exif_key (name) values (%s) returning id"
+
+        id = self.db.fetchvalue(query_get, [key])
+
+        if id is None:
+            id = self.db.fetchvalue(query_ins, [key])
+
+        return id
+
+    def __save_exif_value(self, key_id: int, value: str):
+        query_ins = "insert into aa.exif (image_file_id, key_id, value) " \
+                "values(%s, %s, %s) " \
+                "returning id"
+        query_get = "select id from aa.exif "\
+                    "where image_file_id = %s " \
+                    "  and key_id = %s"
+
+        if self.db.fetchvalue(query_get, [self.file.id, key_id]) is None:
+            self.db.fetchvalue(query_ins, [self.file.id, key_id, str(value)])
+
+
     def save(self):
         self.file.save()
 
@@ -89,3 +112,9 @@ class ImageFile():
 
         if self.db.fetchvalue("select 1 from aa.image_file where id = %s", [self.file.id]) is None:
             self.db.fetchone(query, [self.file.id, self.width, self.height, self.image_type])
+
+        # Save EXIF
+        print(self.exif)
+        for k, v in self.exif.items():
+            exif_key_id = self.__get_exif_key(k)
+            self.__save_exif_value(exif_key_id, v)

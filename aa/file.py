@@ -20,6 +20,7 @@ class File():
         si = os.stat(self.path)
         self.size = si.st_size
         self.ctime = datetime.fromtimestamp(si.st_ctime, tz=timezone.utc)
+        self.flags = 0
 
 
     def __strip_mountpoint(self, path: str) -> str:
