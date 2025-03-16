@@ -99,8 +99,10 @@ class ImageFile():
                     "where image_file_id = %s " \
                     "  and key_id = %s"
 
+        _value = str(value).replace('\x00', '')
+
         if self.db.fetchvalue(query_get, [self.file.id, key_id]) is None:
-            self.db.fetchvalue(query_ins, [self.file.id, key_id, str(value)])
+            self.db.fetchvalue(query_ins, [self.file.id, key_id, _value])
 
 
     def save(self):
