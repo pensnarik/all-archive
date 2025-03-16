@@ -26,7 +26,8 @@ create table aa.file
     path                    text not null,
     md5_hash                char(32) not null,
     size                    bigint not null,
-    ctime                   timestamp without time zone
+    ctime                   timestamp without time zone,
+    processed_at            timestamptz not null default now()
 );
 
 create unique index file_path_idx on aa.file (container_id, path);

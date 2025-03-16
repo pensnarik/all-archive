@@ -23,14 +23,14 @@ class ImageFileType(Enum):
 
 class ImageFile():
 
-    def __init__(self, db: Database, file: File, mp: Mountpoint, path: str):
-        super().__init__(db, mp, path)
-
+    def __init__(self, db: Database, mp: Mountpoint, file: File, path: str, url: str):
         self.file = file
         self.exif = None
         self.time = None
         self.width = None
         self.height = None
+        self.path = path
+        self.db = db
         self.image_type = ImageFileType.unknown
 
         try:
@@ -87,5 +87,5 @@ class ImageFile():
                 "values (%s, %s, %s, %s) " \
                 "returning id"
 
-        if self.db.fetchvalue("select 1 from aa.image_file where id = %s", [self.id]) is None:
-            self.db.fetchone(query, [self.id, self.width, self.height, self.image_type])
+        if self.db.fetchvalue("select 1 from aa.image_file where id = %s", [self.file.id]) is None:
+            self.db.fetchone(query, [self.file.id, self.width, self.height, self.image_type])

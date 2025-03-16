@@ -1,10 +1,16 @@
 import os
+import shutil
+import logging
 
 from stat import S_ISSOCK, S_ISLNK, S_ISCHR
 
 from typing import Callable
 
 from aa.mountpoints import Mountpoint
+from aa.gpg import Decrypt
+from aa.archive import Archive
+
+logger = logging.getLogger("aa")
 
 class Provider():
 
@@ -20,10 +26,66 @@ class FileSystemProvider(Provider):
         self.filter = filter
 
 
-    def get(self):
-        for root, dirs, files in os.walk(self.path):
-            for file in files:
-                mode = os.lstat(os.path.join(root, file)).st_mode
+    def is_archive(self, full_path: str):
+        return full_path.endswith('.tgz') or \
+               full_path.endswith('.tar.gz') or \
+               full_path.endswith('.tar')
 
-                if self.filter(file) and not S_ISSOCK(mode) and not S_ISLNK(mode) and not S_ISCHR(mode):
-                    yield os.path.join(root, file)
+
+    def is_encrypted_archive(self, full_path: str):
+        return full_path.endswith('.tgz.gpg') or \
+               full_path.endswith('.tar.gz.gpg') or \
+               full_path.endswith('.tar.gpg')
+
+
+    def walk(self, path: str, url: str):
+        try:
+            for item in os.listdir(path):
+                full_path = os.path.join(path, item)
+                full_url = os.path.join(url, item)
+
+                mode = os.lstat(full_path).st_mode
+
+                if S_ISSOCK(mode) or S_ISLNK(mode) or S_ISCHR(mode):
+                    print(f"WARNING: unsupported item type {mode=}")
+                    continue
+
+                if 'parts.com' in item or 'tiles' in item or item == 'deepsearch':
+                    continue
+
+                if os.path.isdir(full_path):
+                    logger.info(f"{full_path} is DIR")
+                    yield from self.walk(full_path, full_url)
+
+                if os.path.isfile(full_path):
+                    yield full_path, full_url
+
+                if self.is_archive(full_path):
+                    tmp_dir = Archive().prepare_archive(full_path)
+
+                    if tmp_dir is not None:
+                        yield from self.walk(tmp_dir, os.path.join(url, item))
+                        shutil.rmtree(tmp_dir)
+                    else:
+                        continue
+
+                if self.is_encrypted_archive(full_path):
+                    decryptor = Decrypt()
+
+                    decrypted_path, decrypted_file = decryptor.try_to_decrypt(full_path)
+
+                    if decrypted_file is None:
+                        shutil.rmtree(decrypted_path)
+                        continue
+
+                    tmp_dir = Archive().prepare_archive(os.path.join(decrypted_path, decrypted_file))
+
+                    if tmp_dir is not None:
+                        yield from self.walk(tmp_dir, os.path.join(url, item, decrypted_file))
+                        shutil.rmtree(tmp_dir)
+
+                    shutil.rmtree(decrypted_path)
+
+
+        except PermissionError:
+            print(f"ERROR: Could not access {path}")

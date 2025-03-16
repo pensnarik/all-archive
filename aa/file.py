@@ -1,17 +1,21 @@
 import os
 import hashlib
+import logging
 
 from datetime import datetime, timezone
 
 from aa.db import Database
 from aa.mountpoints import Mountpoint
 
+logger = logging.getLogger("aa")
+
 class File():
 
-    def __init__(self, db: Database, mp: Mountpoint, path: str):
+    def __init__(self, db: Database, mp: Mountpoint, path: str, url: str):
         self.db = db
         self.mp = mp
         self.path = path
+        self.url = url
         self.md5 = self.__get_md5()
         si = os.stat(self.path)
         self.size = si.st_size
@@ -45,7 +49,7 @@ class File():
                 "where container_id = %s " \
                 "  and path = %s"
 
-        return self.db.fetchvalue(query, [self.mp.id, self.path])
+        return self.db.fetchvalue(query, [self.mp.id, self.url])
 
 
     def save(self):
@@ -57,9 +61,9 @@ class File():
 
         if self.id is None:
             self.id = self.db.fetchvalue(
-                query, (self.mp.id, self.__strip_mountpoint(self.path), self.md5, self.size, self.ctime)
+                query, (self.mp.id, self.__strip_mountpoint(self.url), self.md5, self.size, self.ctime)
             )
 
-        print(f"file.id == {self.id}")
+        logger.info(f"file.id == {self.id}")
 
         self.db.conn.commit()

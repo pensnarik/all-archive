@@ -2,6 +2,7 @@
 
 import os
 import sys
+import logging
 import argparse
 
 from aa.file import File
@@ -10,9 +11,14 @@ from aa.db import Database
 from aa.mountpoints import Mountpoint, Mountpoints
 from aa.image import ImageFile
 
+logger = logging.getLogger("aa")
+
 class App():
 
     def __init__(self):
+        logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+                            level=logging.INFO, stream=sys.stdout)
+
         parser = argparse.ArgumentParser()
         parser.add_argument("--path", help="Source files path", required=True)
 
@@ -45,19 +51,23 @@ class App():
             self.path, mp
         )
 
-        for file in provider.get():
-            print(file)
+        for path, url in provider.walk(self.path, self.path):
+            print(path)
+
+            fileobj = File(self.db, mp, path, url)
+            fileobj.save()
+
             try:
                 # Assume that file is an image
-                fileobj = ImageFile(self.db, mp, file)
-                print(f"Format = {fileobj.im.format}")
-            except TypeError:
+                imageobj = ImageFile(self.db, mp, fileobj, path, url)
+                print(f"Format = {imageobj.im.format}")
+                imageobj.save()
+            except TypeError as e:
                 # That is not an image
-                fileobj = File(self.db, mp, file)
+                logger.info(f"This is not an image: {e}")
             except PermissionError:
                 print(f"Skipping {file} due to permission error")
 
-            fileobj.save()
 
 if __name__ == "__main__":
     sys.exit(App().run())
