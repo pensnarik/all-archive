@@ -20,9 +20,8 @@ class Provider():
 
 class FileSystemProvider(Provider):
 
-    def __init__(self, path: str, mp: Mountpoint, filter: Callable=lambda x: True):
+    def __init__(self, path: str, filter: Callable=lambda x: True):
         self.path = path
-        self.mp = mp
         self.filter = filter
 
 

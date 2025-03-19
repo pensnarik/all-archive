@@ -2,15 +2,19 @@ import os
 import re
 import sys
 import json
+import logging
 import argparse
 
 from datetime import datetime
 from enum import Enum
 from PIL import Image, ExifTags, UnidentifiedImageError
+from PIL.ExifTags import TAGS, GPSTAGS
 
 from aa.file import File
 from aa.db import Database
 from aa.mountpoints import Mountpoint
+
+logger = logging.getLogger('aa')
 
 class ImageFileType(Enum):
     unknown = -1
@@ -41,7 +45,7 @@ class ImageFile():
         self.image_type = self.__get_type()
 
         try:
-            self.exif = self.__read_exif()
+            self.__read_exif()
         except OSError:
             self.image_type = ImageFileType.invalid
 
@@ -51,8 +55,33 @@ class ImageFile():
         self.height = self.im.size[1]
 
     def __read_exif(self):
-        if self.im.getexif() is None:
+        exif_data = self.im._getexif()
+
+        if exif_data is None:
             return None
+
+        self.exif = {}
+        self.gps_info = None
+
+        GPSINFO_TAG = next(
+            tag for tag, name in TAGS.items() if name == "GPSInfo"
+        )  # should be 34853
+
+        for tag_id, value in exif_data.items():
+            tag_name = TAGS.get(tag_id, tag_id)
+
+            self.exif[tag_name] = value
+
+        self.gps_info = {}
+
+        for tag_id, value in exif_data.items():
+            tag = TAGS.get(tag_id, tag_id)
+            if tag == "GPSInfo":
+                for gps_tag_id in value:
+                    gps_tag = GPSTAGS.get(gps_tag_id, gps_tag_id)
+                    self.gps_info[gps_tag] = value[gps_tag_id]
+
+        return
 
         return {
             ExifTags.TAGS[k]: v
@@ -105,6 +134,62 @@ class ImageFile():
             self.db.fetchvalue(query_ins, [self.file.id, key_id, _value])
 
 
+    def convert_to_decimal_degrees(self, degrees, minutes, seconds, ref):
+        """Convert GPS coordinates from degrees, minutes, seconds to decimal degrees."""
+        decimal_degrees = degrees + (minutes / 60) + (seconds / 3600)
+        if ref in ['S', 'W']:
+            decimal_degrees = -decimal_degrees
+        return decimal_degrees
+
+    def get_gps_coordinates(self, gps_info):
+        """Extract latitude and longitude from GPS info."""
+        logger.info(f"{gps_info=}")
+        try:
+            # Extract latitude
+            lat_degrees = gps_info['GPSLatitude'][0].numerator / gps_info['GPSLatitude'][0].denominator
+            lat_minutes = gps_info['GPSLatitude'][1].numerator / gps_info['GPSLatitude'][1].denominator
+            lat_seconds = gps_info['GPSLatitude'][2].numerator / gps_info['GPSLatitude'][2].denominator
+            lat_ref = gps_info['GPSLatitudeRef']
+            lat = self.convert_to_decimal_degrees(lat_degrees, lat_minutes, lat_seconds, lat_ref)
+
+            # Extract longitude
+            lon_degrees = gps_info['GPSLongitude'][0].numerator / gps_info['GPSLongitude'][0].denominator
+            lon_minutes = gps_info['GPSLongitude'][1].numerator / gps_info['GPSLongitude'][1].denominator
+            lon_seconds = gps_info['GPSLongitude'][2].numerator / gps_info['GPSLongitude'][2].denominator
+            lon_ref = gps_info['GPSLongitudeRef']
+            lon = self.convert_to_decimal_degrees(lon_degrees, lon_minutes, lon_seconds, lon_ref)
+
+            return lat, lon
+        except KeyError as e:
+            print(f"Missing required GPS tag: {e}")
+            return None, None
+
+
+    def __save_coords(self):
+        logger.info("__save_coords()")
+        if self.exif is None or self.gps_info is None:
+            return False
+
+        if not isinstance(self.gps_info, dict):
+            logger.warning(f"Unexpected GPSInfo format: {type(self.gps_info)}. Expected a dictionary.")
+            return False
+
+
+        query_get = "select id from aa.gps_coords where file_id = %s"
+        query_ins = "insert into aa.gps_coords (file_id, lat, lon) " \
+                    "values (%s, %s, %s) " \
+                    "returning id"
+
+        if self.db.fetchvalue(query_get, [self.file.id]) is not None:
+            return
+
+        lat_decimal, lon_decimal = self.get_gps_coordinates(self.gps_info)
+
+        logger.info(f"Saving coords")
+
+        self.db.fetchvalue(query_ins, [self.file.id, lat_decimal, lon_decimal])
+
+
     def save(self):
         self.file.save()
 
@@ -120,3 +205,7 @@ class ImageFile():
         for k, v in self.exif.items():
             exif_key_id = self.__get_exif_key(k)
             self.__save_exif_value(exif_key_id, v)
+
+        self.__save_coords()
+
+        self.db.conn.commit()

@@ -74,3 +74,13 @@ create table aa.video
     height                  smallint not null,
     duration                numeric(8, 2)
 );
+
+create sequence aa.gps_coords_id_seq start with 500000000 increment by 1;
+
+create table aa.gps_coords
+(
+    id                      bigint primary key default nextval('aa.gps_coords_id_seq'),
+    file_id                 bigint not null references aa.file(id),
+    lat                     numeric,
+    lon                     numeric
+);
