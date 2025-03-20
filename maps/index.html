@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GPS Coordinates Map</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+<!--     <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.Default.css" /> -->
+    <style>
+        #map { height: 100vh; }
+
+        /* Стили для кластеров */
+        .marker-cluster {
+            background-color: rgba(255, 99, 71, 0.6); /* Цвет фона кластера */
+            border-radius: 50%; /* Делаем кластер круглым */
+            width: 40px !important; /* Ширина */
+            height: 40px !important; /* Высота */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px; /* Размер текста */
+            font-weight: bold;
+            color: white; /* Цвет текста */
+            border: 2px solid rgba(255, 99, 71, 0.8); /* Граница */
+        }
+
+        /* Дополнительные стили для разных размеров кластеров */
+        .marker-cluster-small {
+            background-color: rgba(255, 99, 71, 0.6);
+        }
+
+        .marker-cluster-medium {
+            background-color: rgba(255, 69, 0, 0.6);
+        }
+
+        .marker-cluster-large {
+            background-color: rgba(255, 0, 0, 0.6);
+        }
+    </style>
+</head>
+<body>
+    <div id="map"></div>
+
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet.markercluster/dist/leaflet.markercluster.js"></script>
+    <script>
+fetch('http://127.0.0.1:5000/gps-coords')
+    .then(response => response.json())
+    .then(data => {
+        // Обработка данных и добавление маркеров на карту
+        data.forEach(point => {
+            const marker = L.marker([point.lat, point.lon]);
+            marker.bindPopup(`ID: ${point.id}<br>File ID: ${point.file_id}`);
+            markers.addLayer(marker);
+        });
+        map.addLayer(markers);
+    })
+    .catch(error => console.error('Ошибка при загрузке данных:', error));
+
+        // Инициализация карты
+        const map = L.map('map').setView([55.54598999, 37.5585670469444], 13);
+
+        // Добавление слоя OpenStreetMap
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors'
+        }).addTo(map);
+
+        // Создание кластеров с кастомными иконками
+        const markers = L.markerClusterGroup({
+            iconCreateFunction: function (cluster) {
+                const count = cluster.getChildCount(); // Количество маркеров в кластере
+
+                // Определяем размер и цвет в зависимости от количества маркеров
+                let className = 'marker-cluster-small';
+                let size = 40;
+
+                if (count > 10 && count <= 50) {
+                    className = 'marker-cluster-medium';
+                    size = 50;
+                } else if (count > 50) {
+                    className = 'marker-cluster-large';
+                    size = 60;
+                }
+
+                // Создаем кастомную иконку
+                return L.divIcon({
+                    html: `<div>${count}</div>`, // Число внутри кружка
+                    className: `marker-cluster ${className}`, // Классы для стилизации
+                    iconSize: L.point(size, size) // Размер иконки
+                });
+            }
+        });
+
+        // Добавление маркеров на карту
+        data.forEach(point => {
+            const marker = L.marker([point.lat, point.lon]);
+            marker.bindPopup(`ID: ${point.id}<br>File ID: ${point.file_id}`);
+            markers.addLayer(marker);
+        });
+
+        map.addLayer(markers);
+    </script>
+</body>
+</html>

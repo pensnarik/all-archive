@@ -55,7 +55,10 @@ class ImageFile():
         self.height = self.im.size[1]
 
     def __read_exif(self):
-        exif_data = self.im._getexif()
+        try:
+            exif_data = self.im._getexif()
+        except AttributeError:
+            return None
 
         if exif_data is None:
             return None
@@ -69,6 +72,10 @@ class ImageFile():
 
         for tag_id, value in exif_data.items():
             tag_name = TAGS.get(tag_id, tag_id)
+
+            if not isinstance(tag_name, str):
+                logger.warning(f"Expected str as EXIF tag name, got: {tag_name.__class__.__name__}")
+                continue
 
             self.exif[tag_name] = value
 
@@ -161,19 +168,20 @@ class ImageFile():
 
             return lat, lon
         except KeyError as e:
-            print(f"Missing required GPS tag: {e}")
+            logger.error(f"Missing required GPS tag: {e}")
+            return None, None
+        except ZeroDivisionError:
+            logger.error("Could not get GPS coords - division by zero")
             return None, None
 
 
     def __save_coords(self):
-        logger.info("__save_coords()")
         if self.exif is None or self.gps_info is None:
             return False
 
         if not isinstance(self.gps_info, dict):
             logger.warning(f"Unexpected GPSInfo format: {type(self.gps_info)}. Expected a dictionary.")
             return False
-
 
         query_get = "select id from aa.gps_coords where file_id = %s"
         query_ins = "insert into aa.gps_coords (file_id, lat, lon) " \
@@ -201,10 +209,11 @@ class ImageFile():
             self.db.fetchone(query, [self.file.id, self.width, self.height, self.image_type])
 
         # Save EXIF
-        print(self.exif)
-        for k, v in self.exif.items():
-            exif_key_id = self.__get_exif_key(k)
-            self.__save_exif_value(exif_key_id, v)
+        if self.exif is not None:
+            print(self.exif)
+            for k, v in self.exif.items():
+                exif_key_id = self.__get_exif_key(k)
+                self.__save_exif_value(exif_key_id, v)
 
         self.__save_coords()
 
