@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-from flask import Flask, jsonify
+from flask import Flask, jsonify, render_template
 import psycopg
 from psycopg.rows import dict_row  # Для получения данных в виде словаря
 
@@ -41,5 +41,15 @@ def gps_coords():
     data = get_gps_coords()
     return jsonify(data)
 
+
+@app.route('/')
+def index():
+    """
+    Главная страница с картой.
+    """
+    return render_template('map.html')
+
+
 if __name__ == '__main__':
     app.run(debug=True)
+

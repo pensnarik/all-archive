@@ -5,59 +5,51 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>GPS Coordinates Map</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
-<!--     <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.css" />
-    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.Default.css" /> -->
     <style>
+        /* Стили для карты */
         #map { height: 100vh; }
 
         /* Стили для кластеров */
         .marker-cluster {
-            background-color: rgba(255, 99, 71, 0.6); /* Цвет фона кластера */
-            border-radius: 50%; /* Делаем кластер круглым */
-            width: 40px !important; /* Ширина */
-            height: 40px !important; /* Высота */
+            border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 14px; /* Размер текста */
+            font-size: 14px;
             font-weight: bold;
-            color: white; /* Цвет текста */
-            border: 2px solid rgba(255, 99, 71, 0.8); /* Граница */
+            color: white;
+            border: 2px solid rgba(255, 255, 255, 0.8);
+            background-clip: padding-box; /* Чтобы граница не перекрывала фон */
         }
 
-        /* Дополнительные стили для разных размеров кластеров */
+        /* Стили для разных размеров кластеров */
         .marker-cluster-small {
-            background-color: rgba(255, 99, 71, 0.6);
+            background-color: rgba(255, 99, 71, 0.6); /* Красный */
+            width: 40px;
+            height: 40px;
         }
 
         .marker-cluster-medium {
-            background-color: rgba(255, 69, 0, 0.6);
+            background-color: rgba(255, 165, 0, 0.6); /* Оранжевый */
+            width: 50px;
+            height: 50px;
         }
 
         .marker-cluster-large {
-            background-color: rgba(255, 0, 0, 0.6);
+            background-color: rgba(255, 69, 0, 0.6); /* Темно-оранжевый */
+            width: 60px;
+            height: 60px;
         }
     </style>
 </head>
 <body>
     <div id="map"></div>
 
+    <!-- Подключаем Leaflet и плагин для кластеризации -->
     <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
     <script src="https://unpkg.com/leaflet.markercluster/dist/leaflet.markercluster.js"></script>
-    <script>
-fetch('http://127.0.0.1:5000/gps-coords')
-    .then(response => response.json())
-    .then(data => {
-        // Обработка данных и добавление маркеров на карту
-        data.forEach(point => {
-            const marker = L.marker([point.lat, point.lon]);
-            marker.bindPopup(`ID: ${point.id}<br>File ID: ${point.file_id}`);
-            markers.addLayer(marker);
-        });
-        map.addLayer(markers);
-    })
-    .catch(error => console.error('Ошибка при загрузке данных:', error));
 
+    <script>
         // Инициализация карты
         const map = L.map('map').setView([55.54598999, 37.5585670469444], 13);
 
@@ -92,14 +84,21 @@ fetch('http://127.0.0.1:5000/gps-coords')
             }
         });
 
-        // Добавление маркеров на карту
-        data.forEach(point => {
-            const marker = L.marker([point.lat, point.lon]);
-            marker.bindPopup(`ID: ${point.id}<br>File ID: ${point.file_id}`);
-            markers.addLayer(marker);
-        });
+        // Загрузка данных с сервера
+        fetch('/gps-coords')
+            .then(response => response.json())
+            .then(data => {
+                // Добавление маркеров на карту
+                data.forEach(point => {
+                    const marker = L.marker([point.lat, point.lon]);
+                    marker.bindPopup(`ID: ${point.id}<br>File ID: ${point.file_id}`);
+                    markers.addLayer(marker);
+                });
 
-        map.addLayer(markers);
+                // Добавление кластеров на карту
+                map.addLayer(markers);
+            })
+            .catch(error => console.error('Ошибка при загрузке данных:', error));
     </script>
 </body>
 </html>
